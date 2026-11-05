@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+data/
+# Clone vazio já existente; o código principal fica na raiz deste projeto.
+/Projeto-Hackatom/

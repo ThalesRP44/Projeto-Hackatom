@@ -1,0 +1,323 @@
+/* Estilos globais: cores, tipografia, formulário, comprovante e consulta. */
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #203e33;
+  background: #f3f5ee;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+/* Cabeçalho e identidade visual compartilhados pelas duas páginas. */
+header {
+  padding: 24px max(6vw, 20px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #d8e0d4;
+  background: #f8f9f4;
+}
+.brand {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-decoration: none;
+  color: #183e30;
+  font-family: Manrope, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+}
+.brand-light {
+  font-weight: 400;
+}
+.brand-icon {
+  background: #173e30;
+  color: #cde493;
+  padding: 1px 10px;
+  border-radius: 50%;
+  font-size: 28px;
+}
+.header-note,
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+/* Limita a largura do conteúdo e estabelece a hierarquia dos títulos. */
+main {
+  max-width: 900px;
+  padding: 52px 24px;
+  margin: auto;
+}
+.intro {
+  margin-bottom: 35px;
+  max-width: 650px;
+}
+.eyebrow {
+  color: #55724b;
+}
+h1 {
+  font-family: Manrope, sans-serif;
+  font-size: clamp(34px, 6vw, 54px);
+  line-height: 1.14;
+  letter-spacing: -2px;
+  margin: 18px 0;
+}
+h2 {
+  font-family: Manrope, sans-serif;
+  letter-spacing: -0.7px;
+  font-size: 27px;
+  margin: 18px 0 26px;
+}
+.intro p {
+  font-size: 17px;
+  line-height: 1.7;
+  max-width: 510px;
+  color: #647365;
+}
+/* Cartões e elementos auxiliares usados no cadastro e no rastreio. */
+.card {
+  background: #fff;
+  border: 1px solid #dee5da;
+  border-radius: 18px;
+  padding: 34px;
+  box-shadow: 0 12px 38px #213b2307;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tag {
+  display: inline-block;
+  background: #edf3df;
+  padding: 7px 11px;
+  border-radius: 5px;
+  color: #507033;
+  font-size: 12px;
+  font-weight: 700;
+}
+small,
+.hint {
+  font-size: 12px;
+  color: #6a786c;
+  line-height: 1.6;
+}
+.hint {
+  margin: 10px 0;
+}
+/* Formulário: separação das etapas, campos e distribuição em duas colunas. */
+fieldset {
+  padding: 22px 0 28px;
+  border: 0;
+  border-top: 1px solid #e7ece2;
+  margin: 20px 0 0;
+  min-width: 0;
+}
+legend {
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 10px 0 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 12px;
+  min-width: 0;
+}
+input {
+  font: inherit;
+  border: 1px solid #d5ded0;
+  border-radius: 7px;
+  padding: 13px 12px;
+  min-height: 46px;
+  width: 100%;
+  color: #203e33;
+  background: #fcfdf9;
+}
+/* O contorno de foco ajuda a identificar o campo durante a navegação por teclado. */
+input:focus {
+  outline: 2px solid #7c9e59;
+  outline-offset: 2px;
+}
+input::placeholder {
+  color: #8c9689;
+}
+/* Botões de envio e ações secundárias, incluindo estados desabilitados. */
+button {
+  font: inherit;
+  font-size: 13px;
+  background: #214c38;
+  color: white;
+  border: 1px solid #214c38;
+  border-radius: 7px;
+  padding: 14px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  filter: brightness(0.94);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.secondary {
+  color: #35543b;
+  background: white;
+  border: 1px solid #ced9c7;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e7ece2;
+  padding-top: 25px;
+}
+.coordinates {
+  margin: 8px 0 12px;
+}
+/* Área de upload e prévia da foto selecionada antes do envio. */
+.photo {
+  border: 1px dashed #becdb4;
+  border-radius: 9px;
+  padding: 18px;
+  background: #f9fbf5;
+  justify-content: space-between;
+}
+.photo input {
+  font-size: 11px;
+  background: transparent;
+  border: 0;
+  padding: 10px 0;
+  min-height: 0;
+}
+.photo img {
+  height: 160px;
+  object-fit: cover;
+  width: 100%;
+  border-radius: 5px;
+}
+/* Mensagens com estilos distintos para erro e informação ao usuário. */
+.error,
+.notice {
+  padding: 14px;
+  border-radius: 7px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.error {
+  background: #fff0eb;
+  color: #8e3424;
+}
+.notice {
+  background: #eef3dc;
+  color: #4c5e25;
+}
+a {
+  color: #355b30;
+  overflow-wrap: anywhere;
+}
+/* Comprovante: QR, formulário posterior e dados que podem ser longos, como o hash. */
+.receipt .qr {
+  background: white;
+  padding: 18px;
+  width: fit-content;
+  border: 1px solid #e0e7da;
+  border-radius: 10px;
+  margin: 24px 0;
+}
+.receipt form {
+  border-top: 1px solid #e0e7da;
+  padding: 15px 0;
+  margin: 25px 0;
+}
+.receipt form button {
+  margin-top: 15px;
+}
+dl {
+  margin: 25px 0;
+}
+dt {
+  font-size: 12px;
+  color: #6a786c;
+  margin-top: 16px;
+}
+dd {
+  margin: 5px 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+/* Consulta: mantém as fotos inteiras visíveis, sem recortar as evidências. */
+.evidence figure {
+  margin: 0;
+}
+.evidence img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  background: #f3f5ee;
+  border-radius: 8px;
+}
+.evidence figcaption {
+  font-size: 12px;
+  margin: 8px 0;
+}
+footer {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 20px 25px 36px;
+  color: #6d7b6b;
+  font-size: 12px;
+}
+footer p {
+  font-size: 11px;
+  line-height: 1.7;
+  max-width: 650px;
+}
+/* Em telas pequenas, campos e botões ocupam uma coluna para evitar rolagem lateral. */
+@media (max-width: 600px) {
+  header {
+    padding: 18px;
+  }
+  .header-note {
+    display: none;
+  }
+  main {
+    padding: 30px 16px;
+  }
+  .card {
+    padding: 23px 18px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .brand {
+    font-size: 19px;
+  }
+  h1 {
+    letter-spacing: -1px;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .actions button {
+    width: 100%;
+  }
+  .section-head small {
+    font-size: 10px;
+  }
+}
