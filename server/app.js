@@ -1,7 +1,6 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { createCors } from './middleware/cors.js';
 import { createProductRoutes } from './routes/productRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -13,6 +12,7 @@ export function createApp(options) {
     res.set('X-Content-Type-Options', 'nosniff');
     next();
   });
+  app.use(createCors(options.corsOrigins));
   // Saúde do processo: não exige senha e não retorna credenciais nem caminhos privados.
   app.get('/api/health', (req, res) =>
     res.json({ status: 'ok', database: 'sqlite', storage: 'local' }),
@@ -28,13 +28,7 @@ export function createApp(options) {
     }),
   );
   app.use('/api/products', createProductRoutes(options));
-  app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
-  // No modo de produção local, o mesmo servidor também entrega o build do React.
-  const dist = resolve('dist');
-  if (existsSync(dist)) {
-    app.use(express.static(dist));
-    app.get(['/', '/rastreio/:id'], (req, res) => res.sendFile(resolve(dist, 'index.html')));
-  }
+  app.use((req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
   app.use(errorHandler);
   return app;
 }

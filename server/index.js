@@ -1,12 +1,12 @@
 import { createApp } from './app.js';
-import { createRepository } from './repositories/productRepository.js';
+import { ProductRepository } from './repositories/productRepository.js';
 import { loadConfig } from './config/env.js';
 
-// Ponto de entrada da API: carrega configuração, abre o banco e inicia a escuta local.
+// Ponto de entrada da API: carrega configuração, abre o banco e inicia a escuta.
 const config = loadConfig();
-const repository = createRepository();
+const repository = new ProductRepository();
 const server = createApp({ ...config, repository }).listen(config.port, config.host, () => {
-  console.log(`API local: http://${config.host}:${config.port}`);
+  console.log(`API: http://${config.host}:${config.port}`);
   console.log('Banco e fotos locais: data/reboot.sqlite');
 });
 server.on('error', (error) => {

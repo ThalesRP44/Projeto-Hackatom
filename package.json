@@ -4,26 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "node --watch --env-file=.env server/index.js",
-    "dev:web": "vite --host 127.0.0.1 --strictPort",
-    "build": "vite build",
+    "dev": "node --watch --env-file=.env server/index.js",
     "start": "node --env-file=.env server/index.js",
     "test": "node --test",
-    "format": "prettier --write src server tests vite.config.js index.html package.json .prettierrc.json",
-    "format:check": "prettier --check src server tests vite.config.js index.html package.json .prettierrc.json"
+    "format": "prettier --write server tests package.json .prettierrc.json",
+    "format:check": "prettier --check server tests package.json .prettierrc.json"
   },
   "dependencies": {
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.0",
-    "multer": "^2.0.2",
-    "qrcode.react": "^4.2.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "multer": "^2.0.2"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "prettier": "^3.9.10",
-    "vite": "^7.2.0"
-  }
+    "prettier": "^3.9.10"
+  },
+  "description": "API de rastreabilidade de extração de madeira com Express e SQLite"
 }
