@@ -1,8 +1,8 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { createCors } from './middleware/cors.js';
-import { createProductRoutes } from './routes/productRoutes.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { createCors } from './shared/middlewares/cors.js';
+import { createProductRoutes } from './features/products/routes/productRoutes.js';
+import { errorHandler } from './shared/middlewares/errorHandler.js';
 
 // Monta a aplicação sem abrir portas; os testes podem escolher uma porta temporária.
 export function createApp(options) {

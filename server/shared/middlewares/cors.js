@@ -1,4 +1,4 @@
-// Libera apenas origens configuradas. Clientes sem Origin (servidores/CLI) continuam aceitos.
+// Filtro compartilhado: libera origens configuradas e aceita clientes sem Origin (CLI).
 export function createCors(allowedOrigins = []) {
   const origins = new Set(allowedOrigins);
   const methods = ['GET', 'POST', 'PATCH', 'OPTIONS'];

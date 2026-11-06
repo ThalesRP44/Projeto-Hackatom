@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { ProductService } from '../services/productService.js';
 import { ProductController } from '../controllers/productController.js';
-import { createAuth } from '../middleware/auth.js';
-import { upload } from '../middleware/upload.js';
-import { validateId } from '../middleware/validateId.js';
+import { createAuth } from '../middlewares/auth.js';
+import { upload } from '../middlewares/upload.js';
+import { validateId } from '../middlewares/validateId.js';
 
 // Declara o contrato HTTP e a ordem dos filtros antes de executar cada controlador.
 export function createProductRoutes({ repository, writeToken, publicBaseUrl }) {

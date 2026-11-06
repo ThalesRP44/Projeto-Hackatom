@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../utils/HttpError.js';
+import { HttpError } from '../../../shared/errors/HttpError.js';
 import { Product } from '../models/Product.js';
 import { validateProduct, validateImage } from '../validators/productValidator.js';
 

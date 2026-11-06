@@ -113,23 +113,52 @@ Produtos e fotos são armazenados em `data/reboot.sqlite`, criado automaticament
 
 Somente fotos vinculadas a registros podem ser consultadas. Falhas de persistência limpam uploads intermediários. Fotos são públicas para quem conhece o identificador; evite informações pessoais nelas. UUID, SHA-256 e QR Code não comprovam legalidade nem substituem certificações.
 
-## Estrutura orientada a objetos
+## Organização por funcionalidade
 
-- `server/index.js`: inicialização e encerramento da API.
-- `server/app.js`: Express, CORS, limites e rotas JSON.
-- `server/config/env.js`: validação das configurações.
-- `server/models/Product.js`: estado encapsulado, conclusão, hash e representações de resposta.
-- `server/services/productService.js`: classe `ProductService`, regras e limpeza de uploads.
-- `server/repositories/productRepository.js`: classe `ProductRepository`, SQLite e fotos.
-- `server/controllers/productController.js`: classe `ProductController`, contrato HTTP.
-- `server/routes/`: associação de endpoints aos middlewares e controladores.
-- `server/middleware/`: CORS, token, multipart, UUID e erros.
-- `server/validators/`: validação dos campos e imagens.
-- `server/database/schema.sql`: estrutura SQLite.
-- `server/utils/`: erro HTTP e hash.
-- `tests/`: domínio, CORS, configuração, HTTP e persistência real.
+Cada funcionalidade reúne suas próprias camadas dentro de `server/features/`. O MVP possui a funcionalidade `products`, responsável pelo cadastro, conclusão da extração, consulta de rastreio e fotos.
 
-As classes recebem dependências nos construtores e usam campos privados. As fábricas anteriores continuam disponíveis como adaptadores para instâncias.
+```text
+server/
+  index.js                         # Inicialização e encerramento da API
+  app.js                           # Express, limites e registro das funcionalidades
+  config/
+    env.js                         # Validação das configurações
+  features/
+    products/
+      controllers/
+        productController.js       # Requisições e respostas HTTP
+      services/
+        productService.js          # Regras, coordenação do cadastro e limpeza em falhas
+      models/
+        Product.js                 # Estado do produto, conclusão e dados públicos
+      routes/
+        productRoutes.js           # Endpoints e ordem de execução dos middlewares
+      validators/
+        productValidator.js        # Campos, coordenadas, datas e conteúdo das fotos
+      middlewares/
+        auth.js                    # Senha para escrita de produtos
+        upload.js                  # Recebimento e limites das fotos
+        validateId.js              # Validação do UUID do produto
+      repositories/
+        productRepository.js       # Persistência SQLite e fotos em bytes
+      database/
+        schema.sql                 # Tabelas e restrições da funcionalidade
+      utils/
+        hash.js                    # SHA-256 e representação dos campos do produto
+  shared/
+    errors/
+      HttpError.js                 # Erro HTTP reutilizável por qualquer funcionalidade
+    middlewares/
+      cors.js                      # Política de origens para toda a API
+      errorHandler.js              # Respostas de erro comuns a todas as rotas
+tests/                             # Domínio, CORS, configuração, HTTP e SQLite real
+```
+
+O fluxo de um cadastro é `routes → middlewares → controller → service → model/repository`. Os validators são chamados pelo service antes de gravar os dados. O repository executa o SQL, enquanto o model encapsula o estado e as representações do produto. As classes recebem suas dependências nos construtores; as fábricas anteriores continuam como adaptadores para instâncias.
+
+Para adicionar uma funcionalidade, crie uma pasta irmã de `products` em `features`, com suas próprias pastas `controllers`, `services`, `models`, `routes`, `validators` e `middlewares`. Registre suas rotas em `app.js`. Inclua `repositories`, `database` e `utils` quando a funcionalidade precisar deles. Código realmente comum fica em `shared`, sem depender de uma funcionalidade específica.
+
+A reorganização altera apenas os caminhos dos arquivos e imports. Os endpoints e o arquivo persistente `data/reboot.sqlite` permanecem os mesmos.
 
 ## Verificação
 

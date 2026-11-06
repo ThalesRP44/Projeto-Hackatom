@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 
-// Apenas as operações de escrita exigem a senha compartilhada do MVP.
+// As operações de escrita de produtos exigem a senha compartilhada do MVP.
 // A comparação em tempo constante reduz diferenças de tempo entre senhas inválidas.
 export function createAuth(writeToken) {
   return (req, res, next) => {

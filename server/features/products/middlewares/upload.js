@@ -1,6 +1,6 @@
 import multer from 'multer';
 
-// Recebe multipart em memória antes de gravar as imagens como BLOBs no SQLite.
+// Recebe as fotos dos produtos em memória antes de gravá-las como BLOBs no SQLite.
 // Limites de quantidade e tamanho evitam uploads excessivos no MVP.
 export const upload = multer({
   storage: multer.memoryStorage(),

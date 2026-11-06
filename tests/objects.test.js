@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Product } from '../server/models/Product.js';
-import { hashProduct } from '../server/utils/hash.js';
+import { Product } from '../server/features/products/models/Product.js';
+import { hashProduct } from '../server/features/products/utils/hash.js';
 
 test('produto protege o estado e só permite concluir uma vez', () => {
   const row = {

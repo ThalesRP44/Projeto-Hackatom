@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { HttpError } from '../utils/HttpError.js';
+import { HttpError } from '../errors/HttpError.js';
 
 // Último middleware: converte erros de upload, validação e infraestrutura em JSON.
 // Os quatro parâmetros são necessários para o Express reconhecê-lo como tratador de erros.

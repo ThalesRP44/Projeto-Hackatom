@@ -1,4 +1,4 @@
-import { HttpError } from '../utils/HttpError.js';
+import { HttpError } from '../../../shared/errors/HttpError.js';
 
 // Valida novamente no servidor: as restrições HTML podem ser contornadas pelo cliente.
 const bad = (message) => {

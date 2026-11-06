@@ -1,4 +1,4 @@
-import { HttpError } from '../utils/HttpError.js';
+import { HttpError } from '../../../shared/errors/HttpError.js';
 import { hashProduct, sha256 } from '../utils/hash.js';
 
 // O estado só é alterado por operações do domínio; toRow devolve uma cópia.

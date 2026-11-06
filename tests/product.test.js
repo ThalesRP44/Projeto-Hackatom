@@ -1,12 +1,15 @@
 // Testes das regras de negócio, contrato HTTP e persistência SQLite real.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProductService } from '../server/services/productService.js';
-import { hashProduct } from '../server/utils/hash.js';
-import { validateProduct, validateImage } from '../server/validators/productValidator.js';
-import { HttpError } from '../server/utils/HttpError.js';
+import { createProductService } from '../server/features/products/services/productService.js';
+import { hashProduct } from '../server/features/products/utils/hash.js';
+import {
+  validateProduct,
+  validateImage,
+} from '../server/features/products/validators/productValidator.js';
+import { HttpError } from '../server/shared/errors/HttpError.js';
 import { createApp } from '../server/app.js';
-import { createRepository } from '../server/repositories/productRepository.js';
+import { createRepository } from '../server/features/products/repositories/productRepository.js';
 import { mkdtempSync, unlinkSync, rmdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { ProductRepository } from './repositories/productRepository.js';
+import { ProductRepository } from './features/products/repositories/productRepository.js';
 import { loadConfig } from './config/env.js';
 
 // Ponto de entrada da API: carrega configuração, abre o banco e inicia a escuta.

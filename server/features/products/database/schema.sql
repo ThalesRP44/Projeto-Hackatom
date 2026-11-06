@@ -1,4 +1,4 @@
--- Executado na inicialização: cria as tabelas sem apagar registros existentes.
+-- Esquema da funcionalidade de produtos: cria tabelas sem apagar registros existentes.
 -- As chaves estrangeiras ligam os produtos às fotos e impedem referências inválidas.
 CREATE TABLE IF NOT EXISTS photos (
   path TEXT PRIMARY KEY,

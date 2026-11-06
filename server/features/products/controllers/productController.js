@@ -1,6 +1,6 @@
 import { ProductService } from '../services/productService.js';
 import { Product } from '../models/Product.js';
-import { HttpError } from '../utils/HttpError.js';
+import { HttpError } from '../../../shared/errors/HttpError.js';
 
 // Traduz requisições HTTP em chamadas de serviço e escolhe os dados da resposta.
 export class ProductController {
