@@ -4,9 +4,20 @@ import { createApp } from '../server/app.js';
 import { loadConfig } from '../server/config/env.js';
 
 const env = {
+  AUTH_ENABLED: 'true',
   API_WRITE_TOKEN: 'token-de-teste-com-24-caracteres',
   PUBLIC_BASE_URL: 'https://frontend.example',
 };
+
+test('MVP sem login aceita configuração sem senha e restringe a execução ao computador local', () => {
+  const config = loadConfig({ PUBLIC_BASE_URL: 'http://127.0.0.1:5173' });
+  assert.equal(config.authEnabled, false);
+  assert.equal(config.host, '127.0.0.1');
+  assert.throws(
+    () => loadConfig({ PUBLIC_BASE_URL: 'http://127.0.0.1:5173', HOST: '0.0.0.0' }),
+    /loopback/,
+  );
+});
 
 test('configuração aceita frontend externo, origens explícitas e host configurável', () => {
   const config = loadConfig({

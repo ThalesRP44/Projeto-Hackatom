@@ -4,11 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --env-file=.env server/index.js",
+    "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\"",
     "start": "node --env-file=.env server/index.js",
-    "test": "node --test",
-    "format": "prettier --write server tests package.json .prettierrc.json",
-    "format:check": "prettier --check server tests package.json .prettierrc.json"
+    "test": "npm run test:api && npm run test:frontend",
+    "format": "prettier --write server tests frontend/src frontend/vite.config.js package.json frontend/package.json .prettierrc.json",
+    "format:check": "prettier --check server tests frontend/src frontend/vite.config.js package.json frontend/package.json .prettierrc.json",
+    "dev:api": "node --watch --env-file=.env server/index.js",
+    "dev:web": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build",
+    "preview:web": "npm --workspace frontend run preview",
+    "test:api": "node --test tests/*.test.js",
+    "test:frontend": "npm --workspace frontend test"
   },
   "dependencies": {
     "express": "^5.1.0",
@@ -16,7 +22,11 @@
     "multer": "^2.0.2"
   },
   "devDependencies": {
-    "prettier": "^3.9.10"
+    "prettier": "^3.9.10",
+    "concurrently": "^9.2.1"
   },
-  "description": "API de rastreabilidade de extração de madeira com Express e SQLite"
+  "description": "API de rastreabilidade de extração de madeira com Express e SQLite",
+  "workspaces": [
+    "frontend"
+  ]
 }

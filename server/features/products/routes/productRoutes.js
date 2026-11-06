@@ -1,19 +1,19 @@
 import { Router } from 'express';
 import { ProductService } from '../services/productService.js';
 import { ProductController } from '../controllers/productController.js';
-import { createAuth } from '../middlewares/auth.js';
+import { createAuth } from '../../../shared/middlewares/auth.js';
 import { upload } from '../middlewares/upload.js';
 import { validateId } from '../middlewares/validateId.js';
 
 // Declara o contrato HTTP e a ordem dos filtros antes de executar cada controlador.
-export function createProductRoutes({ repository, writeToken, publicBaseUrl }) {
+export function createProductRoutes({ repository, writeToken, publicBaseUrl, authEnabled }) {
   const router = Router();
   const controller = new ProductController(
     new ProductService(repository),
     repository,
     publicBaseUrl,
   );
-  const auth = createAuth(writeToken);
+  const auth = createAuth(writeToken, authEnabled);
   router.post(
     '/',
     auth,

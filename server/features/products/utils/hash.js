@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from '../../../shared/utils/sha256.js';
+export { sha256 };
 
 // Calcula um resumo determinístico para detectar alterações nos bytes ou nos campos.
-export const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
 // Campos específicos de produtos em ordem fixa mantêm o hash reproduzível.
 export function hashProduct(row) {

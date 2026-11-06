@@ -4,6 +4,8 @@ import { HttpError } from '../errors/HttpError.js';
 // Último middleware: converte erros de upload, validação e infraestrutura em JSON.
 // Os quatro parâmetros são necessários para o Express reconhecê-lo como tratador de erros.
 export function errorHandler(error, req, res, next) {
+  if (error.type === 'entity.parse.failed')
+    return res.status(400).json({ error: 'JSON inválido.' });
   if (error instanceof multer.MulterError)
     return res.status(400).json({
       error:

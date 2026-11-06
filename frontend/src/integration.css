@@ -1,0 +1,63 @@
+/* Elementos novos seguem as cores e cartões do frontend fornecido. */
+.connect-page,
+.trace-page {
+  max-width: 1000px;
+  margin: 48px auto;
+  padding: 20px;
+}
+.connect-page {
+  max-width: 600px;
+}
+.connect-page h1,
+.trace-page h1 {
+  font-size: 36px;
+  line-height: 1.2;
+}
+.connect-page .field {
+  margin: 24px 0;
+}
+.connect-page .primary {
+  margin: 16px 0;
+}
+.hash {
+  overflow-wrap: anywhere;
+}
+.trace-receipt {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+.trace-receipt > div {
+  min-width: 0;
+}
+.trace-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.trace-photos figure {
+  margin: 0;
+}
+.trace-photos img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  background: #eef1e9;
+}
+.trace-photos figcaption {
+  font-size: 12px;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .trace-receipt {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .connect-page,
+  .trace-page {
+    margin: 16px auto;
+    padding: 16px;
+  }
+}

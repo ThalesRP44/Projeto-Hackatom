@@ -2,6 +2,7 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { createCors } from './shared/middlewares/cors.js';
 import { createProductRoutes } from './features/products/routes/productRoutes.js';
+import { createRecordRoutes } from './features/records/routes/recordRoutes.js';
 import { errorHandler } from './shared/middlewares/errorHandler.js';
 
 // Monta a aplicação sem abrir portas; os testes podem escolher uma porta temporária.
@@ -28,6 +29,7 @@ export function createApp(options) {
     }),
   );
   app.use('/api/products', createProductRoutes(options));
+  if (options.recordRepository) app.use('/api/records', createRecordRoutes(options));
   app.use((req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
   app.use(errorHandler);
   return app;
