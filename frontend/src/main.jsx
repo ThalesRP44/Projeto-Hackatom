@@ -38,6 +38,8 @@ import {
 } from './store';
 import { labelImage } from './labels';
 import { Trace } from './pages/Trace.jsx';
+import { EnvironmentalAnalysis } from './components/EnvironmentalAnalysis.jsx';
+import { environmentalApproved } from './domain/record.js';
 import { QRCodeSVG } from 'qrcode.react';
 import './integration.css';
 import './style.css';
@@ -568,6 +570,7 @@ function ProductType({ product, onSave, busy }) {
 }
 /** A solicitação inicia 120 horas; a etiqueta é emitida automaticamente com o app aberto. */
 function DemoFinalization({ record, demo, busy, onAction }) {
+  const approved = environmentalApproved(record);
   const [now, setNow] = useState(Date.now());
   const attempted = useRef(null);
   useEffect(() => {
@@ -577,18 +580,28 @@ function DemoFinalization({ record, demo, busy, onAction }) {
   const state = demoStatus(record, now),
     flow = record.demoFinalization;
   useEffect(() => {
-    if (state === 'eligible' && !busy && attempted.current !== flow.id) {
+    if (state === 'eligible' && approved && !busy && attempted.current !== flow.id) {
       attempted.current = flow.id;
       onAction(issueDemoToken);
     }
-  }, [state, busy, flow?.id, onAction]);
+  }, [state, approved, busy, flow?.id, onAction]);
   const minutes = flow ? Math.max(0, Math.ceil((Date.parse(flow.availableAt) - now) / 60000)) : 0;
   return (
     <section className="finalization form-card" aria-label="Prazo para envio do token">
       <h2>
         <Check size={22} /> Prazo para envio do token
       </h2>
-      <p>Envie o registro completo e receba o token em forma de etiqueta QR em até 5 dias.</p>
+      <p>
+        A etiqueta experimental exige registro completo, análise ambiental favorável e prazo de
+        cinco dias.
+      </p>
+      {!approved && (
+        <p className="demo-banner">
+          Emissão bloqueada até concluir a análise ambiental atual de todos os produtos, sem alertas
+          e com evidências suficientes. O modo de referência e a antecipação para pitch não
+          dispensam essa análise.
+        </p>
+      )}
       <p className="small muted">
         Demonstração no servidor local: a etiqueta será liberada ao completar cinco dias após a
         solicitação.
@@ -642,7 +655,7 @@ function DemoFinalization({ record, demo, busy, onAction }) {
               consta nos dados do QR.
             </p>
           )}
-          {state === 'eligible' && (
+          {state === 'eligible' && approved && (
             <>
               <p role="status">Prazo cumprido. Liberando a imagem da etiqueta…</p>
               <button
@@ -656,7 +669,13 @@ function DemoFinalization({ record, demo, busy, onAction }) {
           )}
           {state === 'issued' && (
             <div role="status">
-              <strong>Etiqueta liberada em {time(flow.issuedAt)}</strong>
+              <strong>Etiqueta demonstrativa registrada em {time(flow.issuedAt)}</strong>
+              {!approved && (
+                <p className="error">
+                  Snapshot histórico anterior à triagem atual; não representa aprovação ambiental e
+                  não pode ser reemitido sem análise favorável.
+                </p>
+              )}
               {flow.labels?.map((label) => (
                 <PrintableLabel key={label.productId} label={label} />
               ))}
@@ -681,7 +700,9 @@ function DemoFinalization({ record, demo, busy, onAction }) {
                   ? 'Tipo de produto alterado'
                   : previous.reason === 'manual-validation-required'
                     ? 'Ciclo anterior substituído'
-                    : 'Nova evidência adicionada'}
+                    : previous.reason === 'environmental-analysis-updated'
+                      ? 'Análise ambiental atualizada'
+                      : 'Nova evidência adicionada'}
               </span>
               {previous.token && <code>{previous.token} · inválido</code>}
             </div>
@@ -1191,6 +1212,17 @@ function App() {
                           : 'Foto e localização são preservadas em cada tentativa. Até 3 envios por etapa.'}
                       </span>
                     </div>
+                    {view === 'edit' && (
+                      <EnvironmentalAnalysis
+                        recordId={record.id}
+                        product={p}
+                        onUpdated={async () => {
+                          const all = await refresh();
+                          const updated = all.find((item) => item.id === record.id);
+                          if (updated) setRecord(updated);
+                        }}
+                      />
+                    )}
                   </article>
                 ))}
                 {view === 'edit' && (

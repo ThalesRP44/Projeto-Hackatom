@@ -51,6 +51,8 @@ export class RecordService {
         throw new HttpError(409, 'Limite de três tentativas atingido.');
       this.repository.insertPhoto(id, metadata.id, image);
       product[phase].push({ ...metadata, number: product[phase].length + 1 });
+      if (product.environmentalAnalysis)
+        product.environmentalAnalysis = { ...product.environmentalAnalysis, stale: true };
       // Uma repetição idempotente ou tentativa recusada não invalida a finalização.
       invalidateFinalization(record, 'new-evidence', this.clock(), metadata.id);
       record.updatedAt = new Date().toISOString();
@@ -66,6 +68,8 @@ export class RecordService {
       if (!product) throw new HttpError(404, 'Produto não encontrado.');
       if (product.productType === productType) return record;
       product.productType = productType;
+      if (product.environmentalAnalysis)
+        product.environmentalAnalysis = { ...product.environmentalAnalysis, stale: true };
       invalidateFinalization(record, 'product-type-changed', this.clock());
       record.updatedAt = new Date(this.clock()).toISOString();
       return this.repository.update(record);

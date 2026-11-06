@@ -11,6 +11,34 @@ import {
   discrepancies,
 } from './store.js';
 import { setApiToken } from './api.js';
+import { environmentalApproved } from './domain/record.js';
+import { analyzeProduct } from './services/geoai.js';
+
+test('triagem visual bloqueia referência/erro e adaptador envia a evidência selecionada', async (t) => {
+  const product = {
+    environmentalAnalysis: {
+      status: 'completed',
+      mode: 'reference',
+      decisao_token: { pode_emitir: true, status: 'sem_alertas_detectados' },
+    },
+  };
+  assert.equal(environmentalApproved({ products: [product] }), false);
+  product.environmentalAnalysis.mode = 'live';
+  product.environmentalAnalysis.stale = true;
+  assert.equal(environmentalApproved({ products: [product] }), false);
+  const previous = globalThis.fetch;
+  let call;
+  globalThis.fetch = async (path, options) => {
+    call = { path, ...options };
+    return new Response('{}');
+  };
+  t.after(() => {
+    globalThis.fetch = previous;
+  });
+  await analyzeProduct('registro', 'produto', { mode: 'reference', attemptId: 'foto' });
+  assert.equal(call.path, '/api/geoai/records/registro/products/produto/analyze');
+  assert.equal(JSON.parse(call.body).attemptId, 'foto');
+});
 import {
   startDemoFinalization,
   expediteDemoFinalization,

@@ -3,5 +3,9 @@ dist/
 .env
 *.log
 data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
 # Clone vazio já existente; o código principal fica na raiz deste projeto.
 /Projeto-Hackatom/

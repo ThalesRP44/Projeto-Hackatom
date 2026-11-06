@@ -6,6 +6,27 @@ import { RecordService } from '../server/features/records/services/recordService
 import { DEMO_WAIT_MS } from '../server/features/records/models/DemoFinalization.js';
 import { presentRecord } from '../server/features/records/models/ForestRecord.js';
 import { createApp } from '../server/app.js';
+import { evidenceHash } from '../server/shared/utils/environmentalEvidence.js';
+
+// Fixtures de unidade: a aprovação é simulada aqui; a integração GeoAI tem testes separados.
+function approve(repository, id) {
+  repository.transaction(() => {
+    const record = repository.find(id);
+    for (const product of record.products)
+      product.environmentalAnalysis = {
+        status: 'completed',
+        mode: 'live',
+        inputHash: evidenceHash(product),
+        stale: false,
+        decisao_token: {
+          pode_emitir: true,
+          status: 'sem_alertas_detectados',
+          tipo_token: 'rastro_experimental',
+        },
+      };
+    repository.update(record);
+  });
+}
 
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
@@ -36,6 +57,7 @@ function setup(t, productType = 'Madeira em tora') {
     },
     [file(before.id), file(after.id)],
   );
+  approve(repository, saved.id);
   return {
     repository,
     service,
@@ -108,9 +130,10 @@ test('nova foto invalida o ciclo; repetição e tentativa acima do limite o pres
   assert.deepEqual(service.requireRecord(saved.id).demoFinalization, requested.demoFinalization);
 });
 test('registros anteriores podem receber tipo e snapshots privados não vazam no rastreio', (t) => {
-  const { service, saved } = setup(t, '');
+  const { service, saved, repository } = setup(t, '');
   assert.throws(() => service.finalize(saved.id, 'request'), { status: 409 });
   service.setProductType(saved.id, saved.products[0].id, 'Tábua');
+  approve(repository, saved.id);
   service.finalize(saved.id, 'request');
   service.finalize(saved.id, 'expedite');
   const issued = service.finalize(saved.id, 'issue');
@@ -138,6 +161,7 @@ test('novos endpoints aceitam tipo e ciclo sem login e usam snapshots persistido
     body: JSON.stringify({ productType: 'Viga' }),
   });
   assert.equal(patch.status, 200);
+  approve(repository, saved.id);
   for (const action of ['request', 'expedite', 'issue']) {
     const response = await fetch(`${base}/finalization/${action}`, { method: 'POST' });
     assert.equal(response.status, 200);

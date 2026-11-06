@@ -1,4 +1,36 @@
 /* Elementos novos seguem as cores e cartões do frontend fornecido. */
+.environmental-analysis {
+  border-top: 1px solid #cddbc8;
+  padding-top: 22px;
+  margin-top: 24px;
+}
+.environmental-analysis h3 {
+  font-size: 21px;
+}
+.geoai-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+}
+.geoai-form .primary {
+  margin-top: 16px;
+}
+.geoai-result {
+  background: #eff4ea;
+  border-radius: 10px;
+  padding: 18px;
+  margin-top: 18px;
+}
+.geoai-result .secondary {
+  display: inline-block;
+  margin-top: 12px;
+}
+.geoai-result dl {
+  font-size: 14px;
+}
+.geoai-result dd {
+  margin: 5px 0 12px;
+}
 .connect-page,
 .trace-page {
   max-width: 1000px;

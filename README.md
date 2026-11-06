@@ -4,22 +4,25 @@ MVP de rastreabilidade com API Node.js/Express, SQLite e o frontend React Verdef
 
 ## Iniciar
 
-Requer Node.js 22.13+ (recomendado 24+) e npm.
+Requer Node.js 22.13+ (recomendado 24+), npm e Python 3.10+ para o GeoAI.
 
 ```powershell
 # Somente se ainda não existir .env:
 Copy-Item .env.example .env
 npm install
+npm run setup:geoai
 npm run dev
 ```
 
-Não sobrescreva um `.env` existente. `npm run dev` inicia API e frontend juntos. Abra **http://127.0.0.1:5173**: o sistema entra diretamente em **Meus registros**, sem login ou senha. O modo atual usa `AUTH_ENABLED=false` (padrão) e aceita somente um HOST local de loopback.
+Não sobrescreva um `.env` existente. `npm run dev` inicia API, frontend e GeoAI juntos. Abra **http://127.0.0.1:5173**: o sistema entra diretamente em **Meus registros**, sem login ou senha. O modo atual usa `AUTH_ENABLED=false` (padrão) e aceita somente um HOST local de loopback.
 
 A API responde em `http://127.0.0.1:3001/api/health`. Configure `PUBLIC_BASE_URL=http://127.0.0.1:5173` para os links e QR Codes locais. Não é necessário configurar banco remoto nem executar SQL manualmente.
 
 | Comando | Uso |
 | --- | --- |
-| `npm run dev` | Inicia API e frontend juntos, apenas em loopback por padrão |
+| `npm run dev` | Inicia API, frontend e GeoAI juntos, apenas em loopback por padrão |
+| `npm run setup:geoai` | Cria o ambiente Python e instala as dependências do GeoAI |
+| `npm run dev:geoai` | Apenas o FastAPI local na porta 8000 |
 | `npm run dev:api` | Apenas API com reinício automático |
 | `npm run dev:web` | Apenas frontend com proxy `/api` para a porta 3001 |
 | `npm start` | Apenas API sem modo de observação |
@@ -73,6 +76,67 @@ Uma nova foto ou alteração efetiva do tipo invalida o ciclo atual e o arquiva 
 O contrato de conteúdo fica em `shared/labels/labelPayload.js`, compartilhado pelo backend e pelo gerador PNG. A API verifica se os dados cabem no QR antes de emitir. Os testes decodificam os PNGs para conferir o conteúdo. As etiquetas contêm nome do produtor, coordenadas e históricos do produto; quem recebe o PNG pode ler esses dados. As fotos binárias permanecem no SQLite. A consulta pública por link continua omitindo produtor, coordenadas precisas e snapshots privados das etiquetas.
 
 O ciclo e o token são **demonstrações**, sem certificação externa, blockchain ou comprovação de legalidade. Registros antigos sem tipo continuam abrindo normalmente; informe o tipo na edição para habilitar a solicitação.
+
+## Integração GeoAI do Grupo 6
+
+O modelo foi integrado a partir de `Reboot-the-Earth-Grupo6.zip`, usando os READMEs e os contratos de `api/token.py`. Os arquivos originais estão em `geoai/`; o README em português foi preservado em `geoai/README_ORIGINAL_PT.md`. A API Express e o SQLite continuam sendo a entrada do frontend, sem login no MVP local. O Python/FastAPI roda somente em `127.0.0.1:8000`.
+
+### Preparar e executar
+
+```powershell
+npm install
+npm run setup:geoai
+npm run dev
+```
+
+O setup cria `.venv/` na raiz e instala `geoai/backend/requirements.lock.txt`, gerado a partir das dependências de `requirements.txt`. Detecta Python 3.10+ ou usa o executável indicado em `PYTHON_EXECUTABLE`. Neste computador as dependências já foram instaladas. `npm run dev` inicia os três processos; use `npm run dev:geoai` para iniciar somente o FastAPI. A documentação técnica do serviço Python fica em `http://127.0.0.1:8000/docs`.
+
+### Usar na tela
+
+1. Abra um registro salvo e encontre **Triagem ambiental · GeoAI** em cada produto.
+2. Escolha Amazônia-1 de referência ou Sentinel-2/Dynamic World real, a permissão fictícia e a tentativa associada. Para consulta real, informe período e raio; o GPS vem da evidência salva, não de coordenadas arbitrárias do formulário.
+3. Gere o relatório. A aplicação exibe indicadores, origem dos dados, verificação da foto, decisão do token e link de download do PDF.
+4. Somente um resultado real, atual e favorável de **todos os produtos** habilita a emissão experimental, além dos requisitos de completude e prazo. Referência, erro, dados ausentes, localização simulada ou divergência não aprovam token. A antecipação para pitch não contorna essa regra.
+
+**Sem credenciais**, Amazônia-1 usa apenas dados pré-calculados da área de demonstração `-12.5 / -54.5`. Não é uma consulta da propriedade e não libera token. O GPS de captura permanece separado da área demonstrativa; um resultado nulo não é convertido em zero ou ausência de desmatamento.
+
+**Consulta real:** configure `EE_PROJECT` no `.env` com o ID de um projeto Google Cloud habilitado para Earth Engine. Depois execute, você mesmo:
+
+```powershell
+.\.venv\Scripts\earthengine.exe authenticate
+```
+
+Em Linux/macOS: `.venv/bin/earthengine authenticate`. Reinicie o serviço GeoAI depois de configurar. `EE_PROJECT` é um ID, não uma chave de API. São necessários um projeto habilitado e uma conta autorizada; as credenciais ficam fora do repositório. Consulte a [documentação oficial de autenticação do Earth Engine](https://developers.google.com/earth-engine/guides/auth). Nenhuma credencial foi criada nem autenticação iniciada automaticamente nesta integração.
+
+### O que o modelo faz
+
+- Reutiliza o código de Sentinel-2 SR, Dynamic World, NDVI e comparação dentro/fora do polígono fictício. Resultados experimentais não comprovam extração, infração ou regularidade.
+- A recepção de fotos usa Pillow para verificar formato e resolução. **Não há inferência visual de IA**, autenticação da foto ou comprovação do GPS pelo arquivo.
+- O modo de referência produz um PDF sem fotos fictícias de satélite. No modo real, as três visualizações do Earth Engine são incorporadas ao PDF quando disponíveis. Se essas visualizações falharem, o PDF identifica a ausência e mantém o resultado analítico, sem substituir imagens por ilustrações.
+- A política de `api/token.py` é reaplicada em `server/features/geoai/models/decision.js`. Resultado desconhecido, cenas insuficientes, indicadores inválidos ou alteração fora do polígono bloqueiam emissão. Mesmo favorável, o token continua sendo apenas demonstrativo, sem certificação ou blockchain.
+
+### API integrada
+
+| Método | Rota | Uso |
+| --- | --- | --- |
+| GET | `/api/geoai/catalog` | Saúde/configuração do serviço, permissões fictícias e referência Amazônia-1 |
+| POST | `/api/geoai/records/:id/products/:productId/analyze` | Analisar evidência e persistir relatório/PDF |
+| GET | `/api/geoai/analyses/:analysisId` | JSON da análise histórica |
+| GET | `/api/geoai/analyses/:analysisId/pdf` | Download do PDF salvo, sem repetir a consulta ao satélite |
+
+POST recebe JSON: `mode` (`live` ou `reference`), `attemptId` opcional (última tentativa por padrão), `permissionId` (padrão `DEMO-AUT-001`), `yearBefore`, `yearAfter` e `radius`. As referências de registro/produto/tentativa e o GPS são preenchidos no servidor. A verificação de imagem transmite os bytes já salvos, não URLs Blob do navegador. Os endpoints seguem o modo de autorização da API principal.
+
+### Persistência e invalidação
+
+Relatórios JSON e PDFs ficam na tabela `geoai_analyses` do mesmo `data/reboot.sqlite`. Cada análise guarda as referências da evidência e um hash de seus dados. Mudança de tipo ou foto nova torna a aprovação antiga obsoleta. Uma nova consulta começa negando emissão; falha de rede não preserva uma aprovação anterior como válida. Alterações durante uma consulta tornam o resultado histórico e impedem que ele substitua as evidências atuais. Os relatórios e coordenadas privadas não entram na consulta pública de rastreio.
+
+As tabelas são criadas automaticamente. `.venv/`, `.env`, caches e banco não entram no Git. Para backup, pare todos os processos e copie a pasta `data/` inteira.
+
+### Organização e validação
+
+`server/features/geoai/` reúne controllers, services, models, routes, validators, middlewares, repositories e schema próprios. `frontend/src/components/EnvironmentalAnalysis.jsx` exibe a triagem; `frontend/src/services/geoai.js` adapta as chamadas. `geoai/backend/api/integracao.py` acrescenta o pacote relatório/PDF sem substituir os endpoints originais do modelo.
+
+`npm test` executa Node, frontend e Python. Os testes verificam permissões de token, falhas, referência sem credenciais, associação de GPS/bytes, evidências alteradas durante a consulta, persistência, verificação de fotos e PDFs. As consultas ao Earth Engine são simuladas nos testes; a execução real depende da sua configuração. `npm run build` compila o frontend.
 
 ## Configuração
 

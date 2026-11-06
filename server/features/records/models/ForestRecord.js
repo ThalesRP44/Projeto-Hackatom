@@ -10,6 +10,8 @@ export function presentRecord(record, publicBaseUrl, publicView = false) {
     before: product.before.map((a) => presentAttempt(a, record.id, publicView)),
     after: product.after.map((a) => presentAttempt(a, record.id, publicView)),
   }));
+  // O relatório completo pode conter produtor, GPS e referências privadas.
+  if (publicView) for (const product of products) delete product.environmentalAnalysis;
   const common = {
     id: record.id,
     code: record.code,

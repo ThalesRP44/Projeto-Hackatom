@@ -2,6 +2,7 @@ import { HttpError } from '../../../shared/errors/HttpError.js';
 import { labelPayload } from '../../../../shared/labels/labelPayload.js';
 import { randomUUID } from 'node:crypto';
 import QRCode from 'qrcode';
+import { assertEnvironmentalApproval } from '../../../shared/utils/environmentalEvidence.js';
 
 export const DEMO_WAIT_MS = 5 * 24 * 60 * 60 * 1000;
 export const canFinalize = (record) =>
@@ -57,6 +58,8 @@ export function expediteFinalization(record, now) {
   return record;
 }
 export function issueFinalization(record, now) {
+  // O prazo e a antecipação de pitch nunca substituem a decisão ambiental do modelo.
+  assertEnvironmentalApproval(record);
   const flow = record.demoFinalization;
   if (flow?.token && flow.labels?.length) return record;
   if (

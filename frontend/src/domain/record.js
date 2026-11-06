@@ -1,6 +1,17 @@
 export const MAX_ATTEMPTS = 3;
 export const ALERT_DISTANCE_M = 100;
 export const DEMO_WAIT_MS = 5 * 24 * 60 * 60 * 1000;
+export const environmentalApproved = (record) =>
+  record.products.every((product) => {
+    const a = product.environmentalAnalysis;
+    return (
+      a?.status === 'completed' &&
+      a.mode === 'live' &&
+      !a.stale &&
+      a.decisao_token?.pode_emitir === true &&
+      a.decisao_token?.status === 'sem_alertas_detectados'
+    );
+  });
 
 // A API devolve URLs locais e hashes para as fotos; o rascunho ainda usa Blob.
 export const canFinalizeDemo = (record) =>
