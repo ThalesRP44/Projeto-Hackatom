@@ -37,7 +37,7 @@ export function Trace({ id }) {
   return (
     <main className="trace-page">
       <section className="form-card">
-        <span className="eyebrow">RASTREABILIDADE PÚBLICA</span>
+        <span className="eyebrow">VERDEFICA · RASTREABILIDADE PÚBLICA</span>
         <h1>Origem registrada.</h1>
         {error ? (
           <p role="alert" className="error">
@@ -54,6 +54,7 @@ export function Trace({ id }) {
                 <h2>
                   Produto {index + 1} · {product.species || 'Espécie não informada'}
                 </h2>
+                {product.productType && <p>Tipo de produto: {product.productType}</p>}
                 {['before', 'after'].map((phase) => (
                   <section key={phase}>
                     <h3>{phase === 'before' ? 'Antes da extração' : 'Depois da extração'}</h3>

@@ -30,7 +30,13 @@ import {
   isComplete,
   discrepancies,
   storageErrorMessage,
+  demoStatus,
+  startDemoFinalization,
+  expediteDemoFinalization,
+  issueDemoToken,
+  setProductType,
 } from './store';
+import { labelImage } from './labels';
 import { Trace } from './pages/Trace.jsx';
 import { QRCodeSVG } from 'qrcode.react';
 import './integration.css';
@@ -44,7 +50,7 @@ import './campo.css';
  */
 const PHASE = { before: 'Antes da extração', after: 'Depois da extração' };
 /** Cria um produto de rascunho com identidade própria e históricos independentes. */
-const newProduct = () => ({ id: uid(), species: '', before: [], after: [] });
+const newProduct = () => ({ id: uid(), species: '', productType: '', before: [], after: [] });
 /** Formata o código para exibição; nunca usar esse texto como chave de identidade. */
 const formatCode = (n) => `#${String(n).padStart(4, '0')}`;
 /** Exibe um instante ISO no idioma e fuso do navegador do produtor. */
@@ -309,7 +315,10 @@ function Capture({ phase, onClose, onSave, demoEnabled }) {
         if (!busy) onClose();
       }}
     >
-      <p className="muted">Uma foto, uma localização. Cada envio preserva o histórico anterior.</p>
+      <p className="muted">
+        Uma foto, uma localização. Cada envio preserva o histórico anterior. Em registro finalizado,
+        salvar uma nova foto invalida a finalização e o token anteriores.
+      </p>
       {camera ? (
         <div className="camera">
           <video autoPlay playsInline muted ref={video} />
@@ -402,7 +411,7 @@ function Capture({ phase, onClose, onSave, demoEnabled }) {
   );
 }
 /** Mostra a última foto, contador, alertas e ações; o histórico completo permanece preservado no produto. */
-function Evidence({ product, phase, onCapture, onHistory, editing }) {
+function Evidence({ product, phase, onCapture, onHistory }) {
   const attempts = product[phase],
     last = attempts.at(-1),
     warnings = discrepancies(product, phase);
@@ -454,7 +463,235 @@ function Evidence({ product, phase, onCapture, onHistory, editing }) {
     </section>
   );
 }
-/** Coordena navegação, rascunho, registro selecionado e mensagens; delega a persistência à API por store.js. */
+/** A imagem contém somente o QR. O diálogo de impressão é aberto pelo usuário. */
+function PrintableLabel({ label }) {
+  const [url, setUrl] = useState(''),
+    [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    labelImage(label.payload)
+      .then((value) => {
+        if (active) setUrl(value);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [label]);
+  function print() {
+    const frame = document.createElement('iframe');
+    frame.title = 'Impressão da etiqueta QR';
+    frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
+    document.body.append(frame);
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write(
+      '<!doctype html><html><head><title>Etiqueta QR</title><style>@page{margin:10mm}body{margin:0}img{display:block;width:100mm;height:100mm;max-width:100%}</style></head><body></body></html>',
+    );
+    doc.close();
+    const img = doc.createElement('img');
+    img.alt = 'Etiqueta QR Verdefica';
+    img.onload = () => {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    };
+    frame.contentWindow.onafterprint = () => frame.remove();
+    img.src = url;
+    doc.body.append(img);
+  }
+  return (
+    <article className="printable-label">
+      <h3>
+        {label.payload.tipo} · {label.payload.especie}
+      </h3>
+      <p className="small muted">
+        Etiqueta DEMO · o QR contém produto, coordenadas, datas e etapas. As fotos permanecem na API
+        local de origem.
+      </p>
+      {error ? (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      ) : url ? (
+        <>
+          <img
+            className="qr-preview"
+            src={url}
+            alt="Etiqueta QR para imprimir e colar na mercadoria"
+          />
+          <div className="button-row">
+            <a className="secondary" href={url} download={`etiqueta-${label.productId}.png`}>
+              Baixar imagem PNG
+            </a>
+            <button className="primary" onClick={print}>
+              Imprimir etiqueta
+            </button>
+          </div>
+        </>
+      ) : (
+        <p role="status">Preparando imagem QR…</p>
+      )}
+      <p className="small muted">
+        Impressão sugerida: 10 × 10 cm, sem cortar a borda branca. Confira a leitura antes de colar
+        na mercadoria.
+      </p>
+    </article>
+  );
+}
+function ProductType({ product, onSave, busy }) {
+  const [value, setValue] = useState(product.productType || '');
+  return (
+    <form
+      className="product-type-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(value);
+      }}
+    >
+      <label className="field">
+        Tipo de produto
+        <input
+          required
+          maxLength={100}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Ex.: Madeira em tora"
+        />
+      </label>
+      <button className="secondary" disabled={busy || value.trim() === product.productType}>
+        Salvar tipo de produto
+      </button>
+    </form>
+  );
+}
+/** A solicitação inicia 120 horas; a etiqueta é emitida automaticamente com o app aberto. */
+function DemoFinalization({ record, demo, busy, onAction }) {
+  const [now, setNow] = useState(Date.now());
+  const attempted = useRef(null);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const state = demoStatus(record, now),
+    flow = record.demoFinalization;
+  useEffect(() => {
+    if (state === 'eligible' && !busy && attempted.current !== flow.id) {
+      attempted.current = flow.id;
+      onAction(issueDemoToken);
+    }
+  }, [state, busy, flow?.id, onAction]);
+  const minutes = flow ? Math.max(0, Math.ceil((Date.parse(flow.availableAt) - now) / 60000)) : 0;
+  return (
+    <section className="finalization form-card" aria-label="Prazo para envio do token">
+      <h2>
+        <Check size={22} /> Prazo para envio do token
+      </h2>
+      <p>Envie o registro completo e receba o token em forma de etiqueta QR em até 5 dias.</p>
+      <p className="small muted">
+        Demonstração no servidor local: a etiqueta será liberada ao completar cinco dias após a
+        solicitação.
+      </p>
+      {state === 'incomplete' && (
+        <p role="status">
+          Complete tipo de produto, espécie e ao menos uma foto com coordenadas válidas em cada
+          etapa de todos os produtos.
+        </p>
+      )}
+      {state === 'ready' && (
+        <button
+          className="primary full"
+          disabled={busy}
+          onClick={() => onAction(startDemoFinalization)}
+        >
+          Solicitar token · prazo de 5 dias
+        </button>
+      )}
+      {flow?.startedAt && (
+        <>
+          <p role="status">
+            <strong>Token solicitado.</strong>
+            <br />
+            Solicitação: {time(flow.startedAt)}
+            <br />
+            Liberação prevista: <strong>{time(flow.availableAt)}</strong>
+          </p>
+          <p className="small muted">
+            Nova evidência ou mudança do tipo de produto invalida esta solicitação e exige um novo
+            ciclo. Renomear preserva a etiqueta já emitida.
+          </p>
+          {state === 'waiting' && (
+            <p role="status">
+              Aguardando cinco dias após a solicitação · faltam {Math.floor(minutes / 1440)} dias,{' '}
+              {Math.floor((minutes % 1440) / 60)} h e {minutes % 60} min.
+            </p>
+          )}
+          {state === 'waiting' && demo && (
+            <button
+              className="secondary full"
+              disabled={busy}
+              onClick={() => onAction(expediteDemoFinalization)}
+            >
+              Antecipar 5 dias para o pitch
+            </button>
+          )}
+          {flow.expeditedAt && (
+            <p className="demo-banner">
+              Espera antecipada para o pitch em {time(flow.expeditedAt)}. Essa simulação também
+              consta nos dados do QR.
+            </p>
+          )}
+          {state === 'eligible' && (
+            <>
+              <p role="status">Prazo cumprido. Liberando a imagem da etiqueta…</p>
+              <button
+                className="secondary full"
+                disabled={busy}
+                onClick={() => onAction(issueDemoToken)}
+              >
+                Tentar liberar etiqueta novamente
+              </button>
+            </>
+          )}
+          {state === 'issued' && (
+            <div role="status">
+              <strong>Etiqueta liberada em {time(flow.issuedAt)}</strong>
+              {flow.labels?.map((label) => (
+                <PrintableLabel key={label.productId} label={label} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <p className="small muted">
+        Se o app estiver fechado, a imagem aparecerá ao reabrir após o prazo. O prazo e o histórico
+        são controlados pela API local.
+      </p>
+      {record.demoFinalizationHistory?.length > 0 && (
+        <details>
+          <summary>Ciclos anteriores invalidados ({record.demoFinalizationHistory.length})</summary>
+          {record.demoFinalizationHistory.map((previous, i) => (
+            <div className="demo-token" key={previous.id || i}>
+              <strong>Ciclo invalidado</strong>
+              <span>{time(previous.invalidatedAt)}</span>
+              <span>
+                Motivo:{' '}
+                {previous.reason === 'product-type-changed'
+                  ? 'Tipo de produto alterado'
+                  : previous.reason === 'manual-validation-required'
+                    ? 'Ciclo anterior substituído'
+                    : 'Nova evidência adicionada'}
+              </span>
+              {previous.token && <code>{previous.token} · inválido</code>}
+            </div>
+          ))}
+        </details>
+      )}
+    </section>
+  );
+}
+/** Coordena navegação, rascunho, registro selecionado e mensagens; delega a persistência ao adaptador da API. */
 function App() {
   const [records, setRecords] = useState([]),
     [loading, setLoading] = useState(true),
@@ -502,7 +739,7 @@ function App() {
     setView('list');
     setError('');
   }
-  /** Inicia um rascunho em memória; somente Salvar registro envia o conjunto à API. */
+  /** Inicia um registro só em memória. A API recebe o conjunto em Salvar registro. */
   function start() {
     setDraft({
       id: uid(),
@@ -532,7 +769,11 @@ function App() {
         ...draft,
         name: draft.name.trim(),
         producer: draft.producer.trim(),
-        products: draft.products.map((p) => ({ ...p, species: p.species.trim() })),
+        products: draft.products.map((p) => ({
+          ...p,
+          species: p.species.trim(),
+          productType: p.productType?.trim(),
+        })),
         updatedAt: new Date().toISOString(),
       });
       // A gravação já terminou. Atualiza a lista em memória sem tratar uma nova
@@ -575,12 +816,47 @@ function App() {
         ),
       }));
     else {
+      const hadFinalization = Boolean(record.demoFinalization);
       const saved = await addAttempt(record.id, capture.productId, capture.phase, attempt);
       setRecord(saved);
       await refresh();
-      setToast('Foto salva no SQLite local');
+      setToast(
+        hadFinalization
+          ? 'Foto salva. Finalização anterior invalidada; finalize novamente.'
+          : 'Foto salva no SQLite local',
+      );
     }
     setCapture(null);
+  }
+  async function finalizeDemo(action) {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const saved = await action(record.id);
+      setRecord(saved);
+      setRecords((rows) => rows.map((r) => (r.id === saved.id ? saved : r)));
+      setToast('Solicitação/etiqueta salva no SQLite local');
+    } catch (e) {
+      setError(storageErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function saveType(productId, value) {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const saved = await setProductType(record.id, productId, value);
+      setRecord(saved);
+      setRecords((rows) => rows.map((r) => (r.id === saved.id ? saved : r)));
+      setToast('Tipo salvo. Se havia solicitação, será necessário solicitar novamente.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
   /** Atualiza a espécie somente no rascunho e preserva a identidade dos demais produtos. */
   function updateProduct(id, species) {
@@ -600,11 +876,9 @@ function App() {
             if (view !== 'list') back();
           }}
         >
-          <span className="brand-mark">
-            <Leaf size={27} />
-          </span>
+          <img className="brand-logo" src="/verdefica-logo.png" alt="Logo Verdefica" />
           <span>
-            Rastro Florestal<small>DA ORIGEM AO REGISTRO</small>
+            Verdefica<small>DA ORIGEM AO REGISTRO</small>
           </span>
         </a>
         <span className="local-indicator">
@@ -653,7 +927,8 @@ function App() {
               <div className="demo-banner">
                 <Info size={18} />
                 <span>
-                  Demonstração ativa: locais simulados estão disponíveis ao adicionar fotos.
+                  Demonstração ativa: locais simulados e antecipação da espera para o pitch estão
+                  disponíveis.
                 </span>
               </div>
             )}
@@ -704,7 +979,15 @@ function App() {
                           </span>
                         </span>
                         <span className={`status ${isComplete(r) ? 'complete' : ''}`}>
-                          {isComplete(r) ? 'Completo' : 'Rascunho'}
+                          {r.demoFinalization?.labels?.length
+                            ? 'Etiqueta DEMO'
+                            : r.demoFinalization?.startedAt
+                              ? 'Aguardando etiqueta'
+                              : r.demoFinalization
+                                ? 'Solicitar token'
+                                : isComplete(r)
+                                  ? 'Completo'
+                                  : 'Rascunho'}
                         </span>
                         <ChevronRight className="record-chevron" size={24} />
                       </button>
@@ -850,6 +1133,33 @@ function App() {
                       </div>
                       {view === 'edit' && <LockKeyhole size={17} />}
                     </div>
+                    {view === 'new' ? (
+                      <label className="field species">
+                        Tipo de produto
+                        <input
+                          form="create-form"
+                          required
+                          maxLength={100}
+                          placeholder="Ex.: Madeira em tora"
+                          value={p.productType || ''}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              products: d.products.map((item) =>
+                                item.id === p.id ? { ...item, productType: e.target.value } : item,
+                              ),
+                            }))
+                          }
+                        />
+                      </label>
+                    ) : (
+                      <ProductType
+                        key={`${p.id}-${p.productType || ''}`}
+                        product={p}
+                        busy={busy}
+                        onSave={(value) => saveType(p.id, value)}
+                      />
+                    )}
                     {view === 'new' && (
                       <label className="field species">
                         Espécie da árvore
@@ -868,7 +1178,6 @@ function App() {
                           key={phase}
                           product={p}
                           phase={phase}
-                          editing={view === 'edit'}
                           onCapture={(productId, phase) => setCapture({ productId, phase })}
                           onHistory={(product, phase) => setHistory({ product, phase })}
                         />
@@ -884,6 +1193,14 @@ function App() {
                     </div>
                   </article>
                 ))}
+                {view === 'edit' && (
+                  <DemoFinalization
+                    record={record}
+                    demo={demo}
+                    busy={busy}
+                    onAction={finalizeDemo}
+                  />
+                )}
                 {view === 'new' ? (
                   <>
                     <button
@@ -907,8 +1224,8 @@ function App() {
                   </>
                 ) : (
                   <p className="end-note">
-                    <LockKeyhole size={16} /> Somente o nome pode ser alterado. Novas fotos são
-                    adicionadas ao histórico.
+                    <LockKeyhole size={16} /> Nome e tipo de produto podem ser alterados. Nova foto
+                    ou mudança de tipo exige nova solicitação; o histórico é preservado.
                   </p>
                 )}
               </>
@@ -920,7 +1237,7 @@ function App() {
             )}
             <footer className="footer">
               <Leaf size={16} />
-              <span>Rastro Florestal</span>
+              <span>Verdefica</span>
               <span>Feito para quem cuida da origem.</span>
             </footer>
           </div>
@@ -986,5 +1303,4 @@ function App() {
 }
 // Montagem única da aplicação; recursos de câmera e URLs Blob são liberados pelos componentes.
 const traceId = window.location.pathname.match(/^\/rastreio\/([^/]+)\/?$/)?.[1];
-// O MVP abre diretamente a lista de registros, sem etapa de login.
 createRoot(document.getElementById('root')).render(traceId ? <Trace id={traceId} /> : <App />);

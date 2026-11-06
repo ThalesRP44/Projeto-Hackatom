@@ -1,5 +1,32 @@
 export const MAX_ATTEMPTS = 3;
 export const ALERT_DISTANCE_M = 100;
+export const DEMO_WAIT_MS = 5 * 24 * 60 * 60 * 1000;
+
+// A API devolve URLs locais e hashes para as fotos; o rascunho ainda usa Blob.
+export const canFinalizeDemo = (record) =>
+  isComplete(record) &&
+  record.products.every(
+    (product) =>
+      product.productType?.trim() &&
+      ['before', 'after'].every((phase) =>
+        product[phase].some(
+          (a) =>
+            ((a.photo instanceof Blob && a.photo.size > 0) ||
+              (typeof a.photo === 'string' && a.photoHash)) &&
+            a.location &&
+            Number.isFinite(a.location.latitude) &&
+            Math.abs(a.location.latitude) <= 90 &&
+            Number.isFinite(a.location.longitude) &&
+            Math.abs(a.location.longitude) <= 180,
+        ),
+      ),
+  );
+export function demoStatus(record, now = Date.now()) {
+  const flow = record.demoFinalization;
+  if (!flow?.startedAt) return canFinalizeDemo(record) ? 'ready' : 'incomplete';
+  if (flow.token && flow.labels?.length) return 'issued';
+  return flow.expeditedAt || now >= Date.parse(flow.availableAt) ? 'eligible' : 'waiting';
+}
 export function uid(cryptoApi = globalThis.crypto) {
   if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID();
   // randomUUID exige contexto seguro; getRandomValues também funciona via HTTP na LAN.

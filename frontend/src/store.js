@@ -1,5 +1,6 @@
 import { api } from './api.js';
 export { uid, appendAttempt, isComplete, distance, discrepancies } from './domain/record.js';
+export { DEMO_WAIT_MS, canFinalizeDemo, demoStatus } from './domain/record.js';
 
 // Mantém o contrato esperado pelas telas do ZIP, substituindo IndexedDB por HTTP.
 export const listRecords = () => api('/api/records');
@@ -46,3 +47,17 @@ export function addAttempt(recordId, productId, phase, attempt) {
     body,
   });
 }
+
+// Solicitação, antecipação e emissão são persistidas pela API, com horário do servidor.
+export const startDemoFinalization = (id) =>
+  api(`/api/records/${id}/finalization/request`, { method: 'POST' });
+export const expediteDemoFinalization = (id) =>
+  api(`/api/records/${id}/finalization/expedite`, { method: 'POST' });
+export const issueDemoToken = (id) =>
+  api(`/api/records/${id}/finalization/issue`, { method: 'POST' });
+export const setProductType = (id, productId, productType) =>
+  api(`/api/records/${id}/products/${productId}/type`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productType }),
+  });

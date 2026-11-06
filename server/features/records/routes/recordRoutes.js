@@ -10,6 +10,14 @@ export function createRecordRoutes({ recordRepository, writeToken, publicBaseUrl
   router.get('/', auth, controller.list);
   router.post('/', auth, recordUpload.array('photos', 60), controller.create);
   router.patch('/:id', validateRecordId, auth, json({ limit: '4kb' }), controller.rename);
+  router.patch(
+    '/:id/products/:productId/type',
+    validateRecordId,
+    auth,
+    json({ limit: '4kb' }),
+    controller.productType,
+  );
+  router.post('/:id/finalization/:action', validateRecordId, auth, controller.finalize);
   router.post(
     '/:id/products/:productId/attempts/:phase',
     validateRecordId,

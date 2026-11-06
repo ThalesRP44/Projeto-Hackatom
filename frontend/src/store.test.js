@@ -11,6 +11,56 @@ import {
   discrepancies,
 } from './store.js';
 import { setApiToken } from './api.js';
+import {
+  startDemoFinalization,
+  expediteDemoFinalization,
+  issueDemoToken,
+  setProductType,
+  canFinalizeDemo,
+  demoStatus,
+  DEMO_WAIT_MS,
+} from './store.js';
+
+test('atualização usa API para tipo, solicitação, antecipação e emissão de etiqueta', async (t) => {
+  const calls = [],
+    previous = globalThis.fetch;
+  globalThis.fetch = async (path, options) => {
+    calls.push({ path, ...options });
+    return new Response('{}');
+  };
+  t.after(() => {
+    globalThis.fetch = previous;
+  });
+  await setProductType('r', 'p', 'Tábua');
+  await startDemoFinalization('r');
+  await expediteDemoFinalization('r');
+  await issueDemoToken('r');
+  assert.equal(calls[0].path, '/api/records/r/products/p/type');
+  assert.deepEqual(JSON.parse(calls[0].body), { productType: 'Tábua' });
+  assert.deepEqual(
+    calls.slice(1).map((c) => c.path),
+    ['request', 'expedite', 'issue'].map((action) => `/api/records/r/finalization/${action}`),
+  );
+});
+test('elegibilidade visual aceita fotos por URL da API e calcula os cinco dias', () => {
+  const attempt = {
+    photo: '/api/foto',
+    photoHash: 'hash',
+    location: { latitude: -3, longitude: -60 },
+  };
+  const record = {
+    products: [{ productType: 'Tora', species: 'Ipê', before: [attempt], after: [attempt] }],
+  };
+  assert.ok(canFinalizeDemo(record));
+  assert.equal(demoStatus(record), 'ready');
+  const start = Date.parse('2026-11-06T12:00:00Z');
+  record.demoFinalization = {
+    startedAt: new Date(start).toISOString(),
+    availableAt: new Date(start + DEMO_WAIT_MS).toISOString(),
+  };
+  assert.equal(demoStatus(record, start + DEMO_WAIT_MS - 1), 'waiting');
+  assert.equal(demoStatus(record, start + DEMO_WAIT_MS), 'eligible');
+});
 
 test('adaptador envia registros, nomes e fotos à API sem armazenar a senha no navegador', async (t) => {
   const calls = [];

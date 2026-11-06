@@ -80,8 +80,10 @@ export function validateRecord(input, files = []) {
     const result = {
       id: product.id,
       species: typeof product.species === 'string' ? product.species.trim() : '',
+      productType: typeof product.productType === 'string' ? product.productType.trim() : '',
     };
     if (result.species.length > 100) bad('Espécie deve ter até 100 caracteres.');
+    if (result.productType.length > 100) bad('Tipo de produto deve ter até 100 caracteres.');
     for (const phase of ['before', 'after']) {
       if (!Array.isArray(product[phase]) || product[phase].length > 3)
         bad('São permitidas até três tentativas por etapa.');

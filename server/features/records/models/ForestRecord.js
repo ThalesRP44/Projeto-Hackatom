@@ -19,7 +19,18 @@ export function presentRecord(record, publicBaseUrl, publicView = false) {
     hash: recordHash(record),
     tracking_url: `${publicBaseUrl}/rastreio/${record.id}`,
   };
-  return publicView ? common : { ...common, name: record.name, producer: record.producer };
+  // Etiquetas contêm nome e GPS preciso: seus snapshots não entram na consulta pública.
+  return publicView
+    ? common
+    : {
+        ...common,
+        name: record.name,
+        producer: record.producer,
+        ...(record.demoFinalization ? { demoFinalization: record.demoFinalization } : {}),
+        ...(record.demoFinalizationHistory
+          ? { demoFinalizationHistory: record.demoFinalizationHistory }
+          : {}),
+      };
 }
 function presentAttempt(attempt, recordId, publicView) {
   const location = !attempt.location

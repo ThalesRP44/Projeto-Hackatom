@@ -1,9 +1,16 @@
 import { HttpError } from '../../../shared/errors/HttpError.js';
 import { validateRecord, validateAttempt, text, uuid } from '../validators/recordValidator.js';
+import {
+  invalidateFinalization,
+  startFinalization,
+  expediteFinalization,
+  issueFinalization,
+} from '../models/DemoFinalization.js';
 
 export class RecordService {
-  constructor(repository) {
+  constructor(repository, clock = () => Date.now()) {
     this.repository = repository;
+    this.clock = clock;
   }
   requireRecord(id) {
     const record = this.repository.find(id);
@@ -44,7 +51,41 @@ export class RecordService {
         throw new HttpError(409, 'Limite de três tentativas atingido.');
       this.repository.insertPhoto(id, metadata.id, image);
       product[phase].push({ ...metadata, number: product[phase].length + 1 });
+      // Uma repetição idempotente ou tentativa recusada não invalida a finalização.
+      invalidateFinalization(record, 'new-evidence', this.clock(), metadata.id);
       record.updatedAt = new Date().toISOString();
+      return this.repository.update(record);
+    });
+  }
+  setProductType(id, productId, value) {
+    if (!uuid(productId)) throw new HttpError(400, 'Identificador de produto inválido.');
+    const productType = text(value, 'Tipo de produto');
+    return this.repository.transaction(() => {
+      const record = this.requireRecord(id);
+      const product = record.products.find((p) => p.id === productId);
+      if (!product) throw new HttpError(404, 'Produto não encontrado.');
+      if (product.productType === productType) return record;
+      product.productType = productType;
+      invalidateFinalization(record, 'product-type-changed', this.clock());
+      record.updatedAt = new Date(this.clock()).toISOString();
+      return this.repository.update(record);
+    });
+  }
+  finalize(id, action) {
+    const operations = {
+      request: startFinalization,
+      expedite: expediteFinalization,
+      issue: issueFinalization,
+    };
+    if (!Object.hasOwn(operations, action))
+      throw new HttpError(400, 'Ação de finalização inválida.');
+    return this.repository.transaction(() => {
+      const record = this.requireRecord(id);
+      const before = JSON.stringify(record);
+      const now = this.clock();
+      operations[action](record, now);
+      if (JSON.stringify(record) === before) return record;
+      record.updatedAt = new Date(now).toISOString();
       return this.repository.update(record);
     });
   }

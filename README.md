@@ -1,6 +1,6 @@
 # Reboot the Earth — Rastro Florestal
 
-MVP de rastreabilidade com API Node.js/Express, SQLite e o frontend React Rastro Florestal fornecido no ZIP. O frontend fica em `frontend/`, preservando o visual, a captura por câmera, o GPS e o histórico de até três tentativas por etapa. A persistência original em IndexedDB foi substituída pela API local. Os endpoints anteriores de produtos continuam disponíveis.
+MVP de rastreabilidade com API Node.js/Express, SQLite e o frontend React Verdefica fornecido no ZIP. O frontend fica em `frontend/`, preservando o visual, a captura por câmera, o GPS e o histórico de até três tentativas por etapa. A persistência original em IndexedDB foi substituída pela API local. Os endpoints anteriores de produtos continuam disponíveis.
 
 ## Iniciar
 
@@ -52,6 +52,27 @@ O rascunho novo fica na memória da tela até salvar; sair ou atualizar pode per
 POST `/api/records` recebe multipart com `record` (JSON) e `photos` (arquivos com nome igual ao UUID da tentativa). O JSON contém `id`, `name`, `producer`, `products`; cada produto tem `id`, `species`, `before` e `after`. As tentativas têm `id`, `capturedAt`, `imageSource` e `location` opcional. A inclusão posterior usa os campos multipart `attempt` (JSON) e `photo` (arquivo). O cliente `frontend/src/store.js` implementa esse contrato. Fotos: JPEG/PNG/WebP até 5 MB; no máximo dez produtos e três fotos por etapa.
 
 O servidor atribui códigos sequenciais, calcula hashes e registra o horário de inclusão. Repetir o mesmo UUID não duplica um registro nem uma tentativa. Novas fotos preservam as anteriores. O backend valida o limite dentro da transação para impedir duplicação por requisições concorrentes.
+
+## Atualização Verdefica: tipos e etiquetas demonstrativas
+
+O frontend do arquivo `rastro-florestal (2).zip` acrescenta logo Verdefica, tipo de produto e etiquetas QR em PNG para download/impressão. O sistema continua abrindo diretamente nos registros, sem login, com dados e fotos no SQLite. Não é necessário recriar o banco: os novos campos são armazenados no JSON de cada registro, preservando os anteriores.
+
+Para solicitar a etiqueta, cada produto precisa de tipo, espécie e pelo menos uma evidência válida com coordenadas antes e depois. O backend fixa a liberação em **120 horas após a solicitação**, usando o relógio do servidor. No modo demonstração, o botão de antecipação registra `expeditedAt` sem alterar o prazo original; o snapshot do QR também informa essa simulação.
+
+| Método | Rota | Uso |
+| --- | --- | --- |
+| PATCH | `/api/records/:id/products/:productId/type` | Atualizar o tipo, com JSON `{ "productType": "Tábua" }` |
+| POST | `/api/records/:id/finalization/request` | Iniciar o ciclo demonstrativo |
+| POST | `/api/records/:id/finalization/expedite` | Antecipar a espera para o pitch, de forma auditável |
+| POST | `/api/records/:id/finalization/issue` | Emitir token DEMO e snapshots das etiquetas após o prazo ou antecipação |
+
+Essas rotas seguem a configuração de autorização da API. Chamadas repetidas não reiniciam o ciclo nem duplicam a emissão. O frontend tenta emitir quando o registro está aberto e o prazo acaba; se o app estiver fechado, isso ocorre ao reabrir o registro. Não há tarefa agendada em segundo plano. A API devolve 409 se a solicitação estiver incompleta ou o prazo não tiver sido cumprido.
+
+Uma nova foto ou alteração efetiva do tipo invalida o ciclo atual e o arquiva em `demoFinalizationHistory`, com data e motivo. Repetir uma tentativa, atingir o limite sem salvar ou manter o mesmo tipo não invalida nada. Renomear preserva a etiqueta já emitida como snapshot imutável. Depois de uma invalidação, é necessário solicitar um novo ciclo.
+
+O contrato de conteúdo fica em `shared/labels/labelPayload.js`, compartilhado pelo backend e pelo gerador PNG. A API verifica se os dados cabem no QR antes de emitir. Os testes decodificam os PNGs para conferir o conteúdo. As etiquetas contêm nome do produtor, coordenadas e históricos do produto; quem recebe o PNG pode ler esses dados. As fotos binárias permanecem no SQLite. A consulta pública por link continua omitindo produtor, coordenadas precisas e snapshots privados das etiquetas.
+
+O ciclo e o token são **demonstrações**, sem certificação externa, blockchain ou comprovação de legalidade. Registros antigos sem tipo continuam abrindo normalmente; informe o tipo na edição para habilitar a solicitação.
 
 ## Configuração
 

@@ -16,6 +16,14 @@ export class RecordController {
       .status(201)
       .json(this.present(this.service.create(parseJson(req.body.record), req.files || [])));
   rename = (req, res) => res.json(this.present(this.service.rename(req.params.id, req.body?.name)));
+  productType = (req, res) =>
+    res.json(
+      this.present(
+        this.service.setProductType(req.params.id, req.params.productId, req.body?.productType),
+      ),
+    );
+  finalize = (req, res) =>
+    res.json(this.present(this.service.finalize(req.params.id, req.params.action)));
   attempt = (req, res) =>
     res.json(
       this.present(
